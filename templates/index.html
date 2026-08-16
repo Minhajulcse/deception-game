@@ -276,23 +276,25 @@
 
         socket.on('error', (data) => { alert(data.msg); });
 
+        // --- গেম শুরু হওয়ার ইভেন্ট (নতুন আপডেট) ---
         socket.on('game_started', (data) => {
             myRole = data.role;
-            document.getElementById('lobbyScreen').classList.remove('active');
+            // প্রথমে সব স্ক্রিন বন্ধ করে সবাইকে Hand Screen-এ পাঠাবো
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('handScreen').classList.add('active');
+            
+            // সবার চরিত্র স্ক্রিনে দেখাবে
+            document.getElementById('roleTitle').innerText = `আপনার চরিত্র: ${myRole}`;
+            document.getElementById('murdererUI').style.display = 'none';
+            document.getElementById('waitingForMurdererMsg').style.display = 'none';
             
             if (myRole === 'ফরেনসিক বিজ্ঞানী') {
-                document.getElementById('investigationScreen').classList.add('active');
-                document.getElementById('secretBox').style.display = 'block';
-                document.getElementById('secretPlaceholder').innerHTML = "<strong style='color:var(--accent)'>অপেক্ষা করুন... খুনি অস্ত্র নির্বাচন করছে।</strong>";
-                document.getElementById('toggleBtn').style.display = 'none';
-                
-                // হোস্ট হলে বাটন দেখাবে
-                if (isHost) document.getElementById('hostControls').style.display = 'block';
-
+                document.getElementById('roleDesc').innerText = "আপনি সব জানেন কিন্তু কথা বলতে পারবেন না! খুনি অস্ত্র নির্বাচন করা পর্যন্ত অপেক্ষা করুন...";
+                document.getElementById('waitingForMurdererMsg').style.display = 'block';
+                // বিজ্ঞানীর কার্ডের জায়গা ফাঁকা থাকবে
+                document.getElementById('myMeans').innerHTML = '';
+                document.getElementById('myClues').innerHTML = '';
             } else {
-                document.getElementById('handScreen').classList.add('active');
-                document.getElementById('roleTitle').innerText = `আপনার চরিত্র: ${myRole}`;
-                
                 if (myRole === 'খুনি') {
                     document.getElementById('roleDesc').innerText = "খুনি হিসেবে আপনার কাজ হলো তদন্তকারীদের ধোঁকা দেওয়া।";
                     document.getElementById('murdererUI').style.display = 'block';
