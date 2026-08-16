@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>প্রতারণা: ঢাকায় খুন - Multiplayer</title>
+    <!-- গেমটি অনলাইনে হোস্ট হবে, তাই CDN লিংক দেওয়া হলো -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        :root { --bg: #121212; --text: #f0f0f0; --accent: #d4af37; --red: #8b0000; --blue: #1c4b82; --brown: #8b4513; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; display: flex; flex-direction: column; min-height: 95vh; }
+        h1, h2, h3 { color: var(--accent); margin-top:0; }
+        .screen { display: none; max-width: 1000px; margin: 0 auto; flex: 1; width: 100%; box-sizing: border-box; }
+        .active { display: block; }
+        
+        input { padding: 15px; font-size: 18px; background: #222; color: white; border: 1px solid #555; border-radius: 8px; margin: 10px 0; width: 100%; box-sizing: border-box; max-width: 300px; text-align: center;}
+        input:focus { outline:none; border-color:var(--accent); }
+        button { padding: 15px 30px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px; transition:0.2s; box-sizing: border-box; }
+        button:hover { opacity: 0.8; }
+        
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
+        .card { padding: 10px 5px; border-radius: 8px; border: 2px solid #555; cursor: pointer; background: #222; font-size: 14px; min-height: 50px; display:flex; align-items:center; justify-content:center; user-select: none; transition: transform 0.1s; }
+        .card:active { transform: scale(0.95); }
+        .card.means { border-color: #ff4d4d; background: var(--red); }
+        .card.clue { border-color: #5da2d5; background: var(--blue); }
+        .card.selected { border: 4px solid var(--accent); box-shadow: 0 0 10px var(--accent); }
+        
+        .player-list { background: #1a1a1a; padding: 20px; border-radius: 10px; max-width: 400px; margin: 0 auto; text-align: left;}
+        .scene-tile { background: var(--brown); padding: 15px; border-radius: 8px; margin-bottom: 15px; text-align: left; border: 1px solid #ffb366; }
+        .scene-tile select { width: 100%; padding: 10px; margin-top: 8px; background: #222; color: white; border: 1px solid var(--accent); border-radius: 5px; font-size: 16px;}
+        
+        .public-player-box { background: #1e1e1e; border: 1px solid #444; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left; }
+        .public-player-box h3 { border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 12px; }
+        .public-cards-container { display: flex; gap: 15px; }
+        .public-cards-half { flex: 1; }
+        .public-card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 5px; }
+        .public-card { padding: 8px 4px; border-radius: 5px; text-align: center; font-size: 13px; display:flex; align-items:center; justify-content:center; min-height: 35px; }
+        .public-card.means { background: rgba(139, 0, 0, 0.6); border: 1px solid #ff4d4d; }
+        .public-card.clue { background: rgba(28, 75, 130, 0.6); border: 1px solid #5da2d5; }
+        
+        #secretContent { display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px; }
+        #secretPlaceholder { margin-top: 10px; color: #888; font-style: italic; }
+        .footer { margin-top: auto; padding: 20px; color: #666; font-size: 14px; text-align: center; border-top: 1px solid #222; }
+
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h1 { font-size: 22px; }
+            h2 { font-size: 20px; }
+            .public-cards-container { flex-direction: column; gap: 15px; } 
+            button { width: 100%; max-width: 300px; margin: 10px auto; display: block; }
+            .scene-tile { padding: 12px; }
+            .scene-tile select { font-size: 14px; padding: 8px; }
+            .public-card { font-size: 12px; }
+            .card { font-size: 13px; padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="joinScreen" class="screen active">
+        <h1>প্রতারণা: ঢাকায় খুন</h1>
+        <p style="color:#aaa; font-style: italic; font-size: 14px;">রহস্য, সন্দেহ আর প্রতারণার এক ডিজিটাল বোর্ড গেম</p>
+        <div style="background:#1a1a1a; padding:30px 15px; border-radius:10px; border:1px solid #333; max-width: 400px; margin:20px auto;">
+            <input type="text" id="playerName" placeholder="আপনার নাম লিখুন..." autocomplete="off" onkeypress="handleEnter(event)"><br>
+            <button onclick="joinGame()">গেমে যুক্ত হোন</button>
+        </div>
+    </div>
+
+    <div id="lobbyScreen" class="screen">
+        <h2>লবি (অপেক্ষারত...)</h2>
+        <div class="player-list">
+            <h3 style="margin-top:0;">যুক্ত হয়েছেন (<span id="pCount">0</span> জন):</h3>
+            <ul id="lobbyPlayers" style="font-size:16px; line-height:1.8; padding-left: 20px;"></ul>
+        </div>
+        <br>
+        <button id="startGameBtn" style="display:none; background:#4CAF50;" onclick="startGame()">গেম শুরু করুন</button>
+        <p id="waitMsg" style="color:#aaa; font-size: 14px;">হোস্ট গেম শুরু করার জন্য অপেক্ষা করছেন...</p>
+    </div>
+
+    <div id="handScreen" class="screen">
+        <h2 id="roleTitle" style="font-size:22px;"></h2>
+        <p id="roleDesc" style="color:#ccc; font-size:15px;"></p>
+        
+        <div id="murdererUI" style="display:none; background:#333; padding:15px; border:1px solid #ff4d4d; border-radius:8px; max-width:600px; margin:0 auto;">
+            <p style="color:#ff4d4d; font-size:16px; margin-top:0;">১টি অস্ত্র এবং ১টি প্রমাণ সিলেক্ট করে সাবমিট করুন।</p>
+            <button onclick="submitMurdererChoice()" style="background:#ff4d4d;">সাবমিট করুন</button>
+        </div>
+        
+        <div style="display:flex; flex-wrap:wrap; gap:15px; text-align:left; margin-top:20px;">
+            <div style="flex:1; min-width:280px; background:#1a1a1a; padding:15px; border-radius:8px;">
+                <h4 style="color:#ff4d4d; margin-top:0; border-bottom: 1px solid #333; padding-bottom: 5px;">আপনার অস্ত্র (লাল)</h4>
+                <div id="myMeans" class="card-grid"></div>
+            </div>
+            <div style="flex:1; min-width:280px; background:#1a1a1a; padding:15px; border-radius:8px;">
+                <h4 style="color:#5da2d5; margin-top:0; border-bottom: 1px solid #333; padding-bottom: 5px;">আপনার প্রমাণ (নীল)</h4>
+                <div id="myClues" class="card-grid"></div>
+            </div>
+        </div>
+        
+        <div id="waitingForMurdererMsg" style="display:none; margin-top:30px; font-size:16px; color:var(--accent);">
+            খুনি তার অস্ত্র নির্বাচন করছে, অপেক্ষা করুন...
+        </div>
+    </div>
+
+    <div id="investigationScreen" class="screen">
+        <h2>তদন্তের বোর্ড</h2>
+        
+        <div id="secretBox" style="display:none; background:#222; padding:15px; border:2px dashed var(--accent); margin-bottom:20px; text-align:left; border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="color:var(--accent); margin:0; font-size: 18px;">আপনার গোপন তথ্য</h3>
+                <button id="toggleBtn" onclick="toggleSecret()" style="margin:0; padding:8px 12px; background:#444; font-size:13px; width: auto;">👁️ তথ্য দেখুন</button>
+            </div>
+            <p id="secretPlaceholder" style="font-size: 14px;">এখানে খুনির তথ্য লুকানো আছে।</p>
+            <div id="secretContent">
+                <p style="font-size:16px;">খুনি: <strong id="sMurderer" style="color:white; background:#555; padding:2px 8px; border-radius:4px;"></strong></p>
+                <p style="font-size:16px;">অস্ত্র: <strong id="sWeapon" style="color:#ff4d4d;"></strong></p>
+                <p style="font-size:16px;">প্রমাণ: <strong id="sClue" style="color:#5da2d5;"></strong></p>
+            </div>
+        </div>
+
+        <div style="display:flex; flex-wrap:wrap; gap:15px; text-align:left;">
+            <div style="flex: 1; min-width: 280px; background:#1a1a1a; padding:15px; border-radius:10px;">
+                <h3 style="color:var(--accent); text-align:center; margin-top:0; font-size: 18px;">বিজ্ঞানীর ক্লু</h3>
+                <p id="replaceCounter" style="color:var(--accent); text-align:center; background:#333; padding:8px; border-radius:5px; font-weight:bold; font-size: 14px;"></p>
+                <div id="tilesContainer"></div>
+            </div>
+
+            <div style="flex: 2; min-width: 280px; background:#111; padding:15px; border-radius:10px; border:1px solid #333;">
+                <h3 style="color:var(--accent); text-align:center; margin-top:0; font-size: 18px;">সবার উন্মুক্ত কার্ড</h3>
+                <div id="publicTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; Developed by Minhajul Islam
+    </div>
+
+    <script>
+        let socket;
+        try {
+            socket = io({ transports: ['polling', 'websocket'] });
+        } catch(e) {
+            console.log("Socket.io load failed.");
+        }
+
+        let myRole = null;
+        let selectedWeapon = null;
+        let selectedClue = null;
+        let isHost = false;
+
+        function handleEnter(event) {
+            if (event.key === "Enter") joinGame();
+        }
+
+        function joinGame() {
+            try {
+                const name = document.getElementById('playerName').value.trim();
+                if(!name) { alert("দয়া করে আপনার নাম লিখুন!"); return; }
+
+                if (typeof io === 'undefined' || !socket) {
+                    alert("গেমের কানেকশন ফাইল লোড হতে পারেনি! দয়া করে পেজটি রিফ্রেশ দিন।");
+                    return;
+                }
+
+                socket.emit('join_game', {name: name});
+                document.getElementById('joinScreen').classList.remove('active');
+                document.getElementById('lobbyScreen').classList.add('active');
+            } catch (error) {
+                alert("কোথাও একটি সমস্যা হয়েছে: " + error.message);
+            }
+        }
+
+        socket.on('update_lobby', (data) => {
+            const list = document.getElementById('lobbyPlayers');
+            document.getElementById('pCount').innerText = data.players.length;
+            list.innerHTML = '';
+            
+            data.players.forEach(p => {
+                let badge = p.sid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
+                list.innerHTML += `<li>${p.name} ${badge}</li>`;
+            });
+            
+            if (socket.id === data.host) {
+                isHost = true;
+                document.getElementById('startGameBtn').style.display = 'block';
+                document.getElementById('waitMsg').style.display = 'none';
+            } else {
+                isHost = false;
+                document.getElementById('startGameBtn').style.display = 'none';
+                document.getElementById('waitMsg').style.display = 'block';
+            }
+        });
+
+        function startGame() { socket.emit('start_game'); }
+
+        socket.on('error', (data) => { alert(data.msg); });
+
+        socket.on('game_started', (data) => {
+            myRole = data.role;
+            document.getElementById('lobbyScreen').classList.remove('active');
+            
+            if (myRole === 'ফরেনসিক বিজ্ঞানী') {
+                document.getElementById('investigationScreen').classList.add('active');
+                document.getElementById('secretBox').style.display = 'block';
+                document.getElementById('secretPlaceholder').innerHTML = "<strong style='color:var(--accent)'>অপেক্ষা করুন... খুনি অস্ত্র নির্বাচন করছে।</strong>";
+                document.getElementById('toggleBtn').style.display = 'none';
+            } else {
+                document.getElementById('handScreen').classList.add('active');
+                document.getElementById('roleTitle').innerText = `আপনার চরিত্র: ${myRole}`;
+                
+                if (myRole === 'খুনি') {
+                    document.getElementById('roleDesc').innerText = "খুনি হিসেবে আপনার কাজ হলো তদন্তকারীদের ধোঁকা দেওয়া।";
+                    document.getElementById('murdererUI').style.display = 'block';
+                } else {
+                    document.getElementById('roleDesc').innerText = "খুনি তার অস্ত্র নির্বাচন করছে, অপেক্ষা করুন...";
+                    document.getElementById('waitingForMurdererMsg').style.display = 'block';
+                }
+                renderMyCards(data.means, data.clues);
+            }
+        });
+
+        function renderMyCards(means, clues) {
+            const mDiv = document.getElementById('myMeans');
+            const cDiv = document.getElementById('myClues');
+            mDiv.innerHTML = ''; cDiv.innerHTML = '';
+
+            means.forEach(m => {
+                let d = document.createElement('div');
+                d.className = `card means ${selectedWeapon === m ? 'selected' : ''}`;
+                d.innerText = m;
+                if(myRole === 'খুনি') d.onclick = () => { selectedWeapon = m; renderMyCards(means, clues); }
+                mDiv.appendChild(d);
+            });
+
+            clues.forEach(c => {
+                let d = document.createElement('div');
+                d.className = `card clue ${selectedClue === c ? 'selected' : ''}`;
+                d.innerText = c;
+                if(myRole === 'খুনি') d.onclick = () => { selectedClue = c; renderMyCards(means, clues); }
+                cDiv.appendChild(d);
+            });
+        }
+
+        function submitMurdererChoice() {
+            if(!selectedWeapon || !selectedClue) { alert("১টি লাল এবং ১টি নীল কার্ড সিলেক্ট করুন!"); return; }
+            socket.emit('murderer_selected', {weapon: selectedWeapon, clue: selectedClue});
+            document.getElementById('murdererUI').style.display = 'none';
+            document.getElementById('roleDesc').innerText = "আপনার পছন্দ সাবমিট হয়েছে। তদন্ত শুরু হচ্ছে...";
+        }
+
+        function toggleSecret() {
+            const content = document.getElementById('secretContent');
+            const placeholder = document.getElementById('secretPlaceholder');
+            const btn = document.getElementById('toggleBtn');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                placeholder.style.display = 'none';
+                btn.innerText = '👁️‍🗨️ লুকিয়ে ফেলুন';
+                btn.style.background = '#8b0000';
+            } else {
+                content.style.display = 'none';
+                placeholder.style.display = 'block';
+                btn.innerText = '👁️ তথ্য দেখুন';
+                btn.style.background = '#444';
+            }
+        }
+
+        socket.on('investigation_started', (data) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('investigationScreen').classList.add('active');
+
+            if(myRole === 'ফরেনসিক বিজ্ঞানী') {
+                document.getElementById('secretBox').style.display = 'block';
+                document.getElementById('toggleBtn').style.display = 'block';
+                document.getElementById('secretPlaceholder').innerText = 'এখানে খুনির তথ্য লুকানো আছে।';
+                document.getElementById('sMurderer').innerText = data.secret.murderer;
+                document.getElementById('sWeapon').innerText = data.secret.weapon;
+                document.getElementById('sClue').innerText = data.secret.clue;
+            }
+
+            renderPublicTable(data.players);
+            renderTiles(data.active_tiles, data.replace_count);
+        });
+
+        function renderPublicTable(players) {
+            const pt = document.getElementById('publicTable');
+            pt.innerHTML = '';
+            players.forEach(p => {
+                if(p.role !== 'বিজ্ঞানী') {
+                    let html = `<div class="public-player-box"><h3 style="margin-top:0; font-size:16px;">${p.name}</h3><div class="public-cards-container">`;
+                    
+                    html += `<div class="public-cards-half"><strong style="color:#ff4d4d; font-size:14px; display:block; margin-bottom:5px;">অস্ত্র (লাল):</strong><div class="public-card-grid">`;
+                    p.means.forEach(m => html += `<div class="public-card means">${m}</div>`);
+                    html += `</div></div>`;
+
+                    html += `<div class="public-cards-half"><strong style="color:#5da2d5; font-size:14px; display:block; margin-bottom:5px;">প্রমাণ (নীল):</strong><div class="public-card-grid">`;
+                    p.clues.forEach(c => html += `<div class="public-card clue">${c}</div>`);
+                    html += `</div></div>`;
+                    
+                    html += `</div></div>`;
+                    pt.innerHTML += html;
+                }
+            });
+        }
+
+        function renderTiles(tiles, replaceCount) {
+            let savedSelections = {};
+            document.querySelectorAll('.scene-tile select').forEach(sel => {
+                savedSelections[sel.id] = sel.value;
+            });
+
+            const counterDiv = document.getElementById('replaceCounter');
+            if(replaceCount > 0) {
+                counterDiv.innerText = `পরিবর্তনের সুযোগ: আরো ${replaceCount} বার`;
+                counterDiv.style.color = "var(--accent)";
+            } else {
+                counterDiv.innerText = "পরিবর্তনের সুযোগ শেষ! এটাই চূড়ান্ত ক্লু।";
+                counterDiv.style.color = "#ff4d4d";
+            }
+            
+            const tc = document.getElementById('tilesContainer');
+            tc.innerHTML = '';
+            
+            tiles.forEach(t => {
+                let html = `<div class="scene-tile" id="tile-${t.id}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>${t.name}</strong>`;
+                
+                if(!t.isRequired && myRole === 'ফরেনসিক বিজ্ঞানী' && replaceCount > 0) {
+                    html += `<button style="padding:4px 8px; font-size:12px; margin:0; background:#222; color:white; border:1px solid #ffb366; width:auto;" onclick="socket.emit('replace_tile', {tile_id: '${t.id}'})">🔄 বদলান</button>`;
+                }
+                
+                html += `</div><select id="sel-${t.id}" ${myRole !== 'ফরেনসিক বিজ্ঞানী' ? 'disabled' : ''} onchange="tileChanged('${t.id}')">`;
+                t.options.forEach(opt => {
+                    html += `<option value="${opt}">${opt}</option>`;
+                });
+                html += `</select></div>`;
+                tc.innerHTML += html;
+            });
+
+            Object.keys(savedSelections).forEach(id => {
+                let sel = document.getElementById(id);
+                if (sel) {
+                    sel.value = savedSelections[id];
+                }
+            });
+        }
+
+        function tileChanged(tileId) {
+            if(myRole === 'ফরেনসিক বিজ্ঞানী') {
+                const val = document.getElementById(`sel-${tileId}`).value;
+                socket.emit('update_tile_selection', {tile_id: tileId, value: val});
+            }
+        }
+
+        socket.on('tile_updated', (data) => {
+            const sel = document.getElementById(`sel-${data.tile_id}`);
+            if(sel) sel.value = data.value;
+        });
+
+        socket.on('tile_replaced', (data) => {
+            renderTiles(data.active_tiles, data.replace_count);
+        });
+    </script>
+</body>
+</html>
