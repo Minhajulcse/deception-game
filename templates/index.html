@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>প্রতারণা: ঢাকায় খুন - Multiplayer</title>
-    <!-- গেমটি অনলাইনে হোস্ট হবে, তাই CDN লিংক দেওয়া হলো -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root { --bg: #121212; --text: #f0f0f0; --accent: #d4af37; --red: #8b0000; --blue: #1c4b82; --brown: #8b4513; }
@@ -18,7 +17,6 @@
         button { padding: 15px 30px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px; transition:0.2s; box-sizing: border-box; }
         button:hover { opacity: 0.8; }
         
-        /* Modal Styles for Rules */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: #1a1a1a; width: 90%; max-width: 650px; max-height: 80vh; overflow-y: auto; padding: 30px; border-radius: 12px; border: 2px solid var(--accent); text-align: left; position: relative; box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
         .close-btn { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #ff4d4d; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
@@ -68,62 +66,40 @@
 </head>
 <body>
 
-    <!-- Rules Modal -->
     <div id="rulesModal" class="modal-overlay">
         <div class="modal-content">
             <button class="close-btn" onclick="closeRules()">✖</button>
-            
             <div class="rules-section">
                 <h2 style="color: var(--accent); margin-top:0;">📖 খেলার নিয়ম</h2>
-                <p><strong>চরিত্রসমূহ (Roles):</strong></p>
+                <p><strong>চরিত্রসমূহ:</strong></p>
                 <ul>
-                    <li><strong style="color:#ff4d4d;">খুনি (Murderer):</strong> গেমের শুরুতে সে নিজের কার্ড থেকে ১টি অস্ত্র এবং ১টি প্রমাণ বেছে নেবে। তার মূল কাজ হলো অন্যদের ধোঁকা দেওয়া।</li>
-                    <li><strong style="color:#5da2d5;">বিজ্ঞানী (Scientist):</strong> সে জানে খুনি কে এবং কোন অস্ত্র ও প্রমাণ ব্যবহার করা হয়েছে। কিন্তু সে কথা বলতে পারবে না! সে শুধু স্ক্রিনের বিভিন্ন ক্লু (Scene Tiles) পরিবর্তন করে তদন্তকারীদের ইশারা দেবে।</li>
-                    <li><strong style="color:#fff;">তদন্তকারী (Investigators):</strong> তাদের লক্ষ্য হলো বিজ্ঞানীর দেওয়া ইশারা বুঝে খুনি, খুনের অস্ত্র এবং প্রমাণ খুঁজে বের করা।</li>
-                </ul>
-                <p><strong>কীভাবে খেলবেন?</strong></p>
-                <ul>
-                    <li>গেম শুরু হলে খুনি তার অস্ত্র ও প্রমাণ বেছে নেবে।</li>
-                    <li>এরপর তদন্ত শুরু হবে। বিজ্ঞানী বিভিন্ন সিন টাইলস (যেমন: মৃত্যুর কারণ, স্থান ইত্যাদি) সিলেক্ট করে সবাইকে ক্লু দেবে।</li>
-                    <li>সবাই মিলে আলোচনা করে খুনির কার্ডগুলো অনুমান করার চেষ্টা করবে। বিজ্ঞানী চাইলে ২ বার তার ক্লু পরিবর্তন করতে পারবে।</li>
-                    <li>তদন্তকারীরা সঠিক খুনি, অস্ত্র ও প্রমাণ ধরতে পারলে তারা জিতে যাবে। আর খুনি সবাইকে ধোঁকা দিতে পারলে খুনি জিতে যাবে!</li>
+                    <li><strong style="color:#ff4d4d;">খুনি:</strong> নিজের কার্ড থেকে ১টি অস্ত্র এবং ১টি প্রমাণ বেছে নেবে। তার কাজ অন্যদের ধোঁকা দেওয়া।</li>
+                    <li><strong style="color:#5da2d5;">বিজ্ঞানী:</strong> সে জানে খুনি কে! কিন্তু কথা বলতে পারবে না। সে শুধু স্ক্রিনের ক্লু পরিবর্তন করে ইশারা দেবে।</li>
+                    <li><strong style="color:#fff;">তদন্তকারী:</strong> তাদের লক্ষ্য বিজ্ঞানীর ইশারা বুঝে সঠিক খুনি, অস্ত্র এবং প্রমাণ খুঁজে বের করা।</li>
                 </ul>
             </div>
-
             <div class="rules-section">
                 <h2 style="color: var(--accent); margin-top:0;">📖 Game Rules</h2>
                 <p><strong>Roles:</strong></p>
                 <ul>
-                    <li><strong style="color:#ff4d4d;">Murderer:</strong> Secretly chooses 1 Weapon and 1 Clue from their cards. Their goal is to mislead the investigation.</li>
-                    <li><strong style="color:#5da2d5;">Scientist:</strong> Knows the Murderer, Weapon, and Clue but CANNOT speak! They give hints to the investigators by selecting options on the 'Scene Tiles'.</li>
-                    <li><strong style="color:#fff;">Investigators:</strong> Must interpret the Scientist's hints to correctly identify the Murderer, the Weapon, and the Clue.</li>
-                </ul>
-                <p><strong>How to Play?</strong></p>
-                <ul>
-                    <li>Once the game starts, the Murderer selects their Weapon and Clue.</li>
-                    <li>The investigation begins. The Scientist gives hints by selecting options on Scene Tiles (e.g., Cause of Death, Location).</li>
-                    <li>Players discuss the hints and try to guess the Murderer's exact Weapon and Clue. The Scientist can replace a tile up to 2 times to give new hints.</li>
-                    <li>If the Investigators correctly identify the Murderer, their Weapon, and Clue, they win! If the Murderer successfully deceives everyone, the Murderer wins!</li>
+                    <li><strong style="color:#ff4d4d;">Murderer:</strong> Secretly chooses 1 Weapon & 1 Clue. Goal is to mislead.</li>
+                    <li><strong style="color:#5da2d5;">Scientist:</strong> Knows the truth but CANNOT speak! Gives hints via Scene Tiles.</li>
+                    <li><strong style="color:#fff;">Investigators:</strong> Must interpret hints to catch the Murderer.</li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <!-- Join Screen -->
     <div id="joinScreen" class="screen active">
         <h1>প্রতারণা: ঢাকায় খুন</h1>
         <p style="color:#aaa; font-style: italic; font-size: 14px;">রহস্য, সন্দেহ আর প্রতারণার এক ডিজিটাল বোর্ড গেম</p>
-        
-        <!-- Rules Button -->
         <button onclick="openRules()" style="background: #333; color: white; border: 1px solid var(--accent); padding: 10px 20px; font-size: 15px; border-radius: 20px; margin-top: 5px;">📖 খেলার নিয়ম / Game Rules</button>
-
         <div style="background:#1a1a1a; padding:30px 15px; border-radius:10px; border:1px solid #333; max-width: 400px; margin:20px auto;">
             <input type="text" id="playerName" placeholder="আপনার নাম লিখুন..." autocomplete="off" onkeypress="handleEnter(event)"><br>
             <button onclick="joinGame()">গেমে যুক্ত হোন</button>
         </div>
     </div>
 
-    <!-- Lobby Screen -->
     <div id="lobbyScreen" class="screen">
         <h2>লবি (অপেক্ষারত...)</h2>
         <div class="player-list">
@@ -135,7 +111,6 @@
         <p id="waitMsg" style="color:#aaa; font-size: 14px;">হোস্ট গেম শুরু করার জন্য অপেক্ষা করছেন...</p>
     </div>
 
-    <!-- Hand Screen -->
     <div id="handScreen" class="screen">
         <h2 id="roleTitle" style="font-size:22px;"></h2>
         <p id="roleDesc" style="color:#ccc; font-size:15px;"></p>
@@ -161,7 +136,6 @@
         </div>
     </div>
 
-    <!-- Investigation Screen -->
     <div id="investigationScreen" class="screen">
         <h2>তদন্তের বোর্ড</h2>
         
@@ -190,6 +164,12 @@
                 <div id="publicTable"></div>
             </div>
         </div>
+
+        <!-- নতুন ম্যাচ শুরুর বাটন (শুধু হোস্ট দেখতে পাবে) -->
+        <div id="hostControls" style="display:none; text-align: center; margin-top: 30px; width: 100%; border-top: 1px solid #333; padding-top: 20px;">
+            <p style="color: #888; font-size: 14px; margin-bottom: 5px;">গেম শেষ হয়ে গেলে নিচের বাটনে ক্লিক করুন</p>
+            <button onclick="resetGame()" style="background: #4CAF50; width: 90%; max-width: 350px;">🔄 নতুন ম্যাচ শুরু করুন (Play Again)</button>
+        </div>
     </div>
 
     <div class="footer">
@@ -197,19 +177,11 @@
     </div>
 
     <script>
-        // Rules Modal Functions
-        function openRules() {
-            document.getElementById('rulesModal').style.display = 'flex';
-        }
-        function closeRules() {
-            document.getElementById('rulesModal').style.display = 'none';
-        }
-        // Close modal if clicked outside the box
+        function openRules() { document.getElementById('rulesModal').style.display = 'flex'; }
+        function closeRules() { document.getElementById('rulesModal').style.display = 'none'; }
         window.onclick = function(event) {
             let modal = document.getElementById('rulesModal');
-            if (event.target === modal) {
-                modal.style.display = "none";
-            }
+            if (event.target === modal) modal.style.display = "none";
         }
 
         let socket;
@@ -269,6 +241,39 @@
 
         function startGame() { socket.emit('start_game'); }
 
+        // --- নতুন ম্যাচ শুরুর ফাংশন ---
+        function resetGame() {
+            if(confirm("আপনি কি নিশ্চিত যে বর্তমান গেমটি শেষ করে নতুন ম্যাচ শুরু করতে চান?")) {
+                socket.emit('reset_game');
+            }
+        }
+
+        // --- লবিতে ফিরে যাওয়ার ইভেন্ট ---
+        socket.on('back_to_lobby', (data) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('lobbyScreen').classList.add('active');
+            document.getElementById('hostControls').style.display = 'none';
+            
+            const list = document.getElementById('lobbyPlayers');
+            document.getElementById('pCount').innerText = data.players.length;
+            list.innerHTML = '';
+            
+            data.players.forEach(p => {
+                let badge = p.sid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
+                list.innerHTML += `<li>${p.name} ${badge}</li>`;
+            });
+            
+            if (socket.id === data.host) {
+                isHost = true;
+                document.getElementById('startGameBtn').style.display = 'block';
+                document.getElementById('waitMsg').style.display = 'none';
+            } else {
+                isHost = false;
+                document.getElementById('startGameBtn').style.display = 'none';
+                document.getElementById('waitMsg').style.display = 'block';
+            }
+        });
+
         socket.on('error', (data) => { alert(data.msg); });
 
         socket.on('game_started', (data) => {
@@ -280,6 +285,10 @@
                 document.getElementById('secretBox').style.display = 'block';
                 document.getElementById('secretPlaceholder').innerHTML = "<strong style='color:var(--accent)'>অপেক্ষা করুন... খুনি অস্ত্র নির্বাচন করছে।</strong>";
                 document.getElementById('toggleBtn').style.display = 'none';
+                
+                // হোস্ট হলে বাটন দেখাবে
+                if (isHost) document.getElementById('hostControls').style.display = 'block';
+
             } else {
                 document.getElementById('handScreen').classList.add('active');
                 document.getElementById('roleTitle').innerText = `আপনার চরিত্র: ${myRole}`;
@@ -352,6 +361,11 @@
                 document.getElementById('sMurderer').innerText = data.secret.murderer;
                 document.getElementById('sWeapon').innerText = data.secret.weapon;
                 document.getElementById('sClue').innerText = data.secret.clue;
+            }
+            
+            // হোস্ট হলে নতুন গেমের বাটন দেখাবে
+            if (isHost) {
+                document.getElementById('hostControls').style.display = 'block';
             }
 
             renderPublicTable(data.players);
