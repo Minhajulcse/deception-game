@@ -12,9 +12,9 @@
         .screen { display: none; max-width: 1000px; margin: 0 auto; flex: 1; width: 100%; box-sizing: border-box; }
         .active { display: block; }
         
-        input { padding: 15px; font-size: 18px; background: #222; color: white; border: 1px solid #555; border-radius: 8px; margin: 10px 0; width: 100%; box-sizing: border-box; max-width: 300px; text-align: center;}
+        input { padding: 15px; font-size: 16px; background: #222; color: white; border: 1px solid #555; border-radius: 8px; width: 100%; box-sizing: border-box; text-align: center;}
         input:focus { outline:none; border-color:var(--accent); }
-        button { padding: 15px 30px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin: 10px; transition:0.2s; box-sizing: border-box; }
+        button { padding: 15px 20px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition:0.2s; box-sizing: border-box; width: 100%;}
         button:hover { opacity: 0.8; }
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
@@ -24,8 +24,7 @@
         .rules-section { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #333; }
         .rules-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         .rules-section ul { padding-left: 20px; line-height: 1.6; color: #ddd;}
-        .rules-section li { margin-bottom: 8px; }
-
+        
         .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
         .card { padding: 10px 5px; border-radius: 8px; border: 2px solid #555; cursor: pointer; background: #222; font-size: 14px; min-height: 50px; display:flex; align-items:center; justify-content:center; user-select: none; transition: transform 0.1s; }
         .card:active { transform: scale(0.95); }
@@ -48,23 +47,18 @@
         
         #secretContent { display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px; }
         #secretPlaceholder { margin-top: 10px; color: #888; font-style: italic; }
-        
-        /* বাতিল করা টাইলস বক্সের স্টাইল */
         #discardedBox { display: none; background: #2a1111; padding: 15px; border: 1px solid #ff4d4d; border-radius: 8px; margin-top: 15px; text-align: left; }
         #discardedList { margin: 10px 0 0 0; padding-left: 20px; color: #ddd; font-size: 14px; line-height: 1.8; }
+        #replacementLog { background: #222; border: 1px solid #ffb366; color: #ffb366; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; display: none; text-align: center; }
 
         .footer { margin-top: auto; padding: 20px; color: #666; font-size: 14px; text-align: center; border-top: 1px solid #222; }
 
         @media (max-width: 768px) {
             body { padding: 10px; }
             h1 { font-size: 22px; }
-            h2 { font-size: 20px; }
             .public-cards-container { flex-direction: column; gap: 15px; } 
-            button { width: 100%; max-width: 300px; margin: 10px auto; display: block; }
             .scene-tile { padding: 12px; }
             .scene-tile select { font-size: 14px; padding: 8px; }
-            .public-card { font-size: 12px; }
-            .card { font-size: 13px; padding: 8px; }
             .modal-content { width: 95%; padding: 20px; }
         }
     </style>
@@ -76,53 +70,60 @@
             <button class="close-btn" onclick="closeRules()">✖</button>
             <div class="rules-section">
                 <h2 style="color: var(--accent); margin-top:0;">📖 খেলার নিয়ম</h2>
-                <p><strong>চরিত্রসমূহ:</strong></p>
                 <ul>
                     <li><strong style="color:#ff4d4d;">খুনি:</strong> নিজের কার্ড থেকে ১টি অস্ত্র এবং ১টি প্রমাণ বেছে নেবে। তার কাজ অন্যদের ধোঁকা দেওয়া।</li>
                     <li><strong style="color:#5da2d5;">বিজ্ঞানী:</strong> সে জানে খুনি কে! কিন্তু কথা বলতে পারবে না। সে শুধু স্ক্রিনের ক্লু পরিবর্তন করে ইশারা দেবে।</li>
                     <li><strong style="color:#fff;">তদন্তকারী:</strong> তাদের লক্ষ্য বিজ্ঞানীর ইশারা বুঝে সঠিক খুনি, অস্ত্র এবং প্রমাণ খুঁজে বের করা।</li>
                 </ul>
             </div>
-            <div class="rules-section">
-                <h2 style="color: var(--accent); margin-top:0;">📖 Game Rules</h2>
-                <p><strong>Roles:</strong></p>
-                <ul>
-                    <li><strong style="color:#ff4d4d;">Murderer:</strong> Secretly chooses 1 Weapon & 1 Clue. Goal is to mislead.</li>
-                    <li><strong style="color:#5da2d5;">Scientist:</strong> Knows the truth but CANNOT speak! Gives hints via Scene Tiles.</li>
-                    <li><strong style="color:#fff;">Investigators:</strong> Must interpret hints to catch the Murderer.</li>
-                </ul>
+        </div>
+    </div>
+
+    <!-- Join Screen (New Room System) -->
+    <div id="joinScreen" class="screen active">
+        <h1>প্রতারণা: ঢাকায় খুন</h1>
+        <p style="color:#aaa; font-style: italic; font-size: 14px; margin-bottom: 5px;">রহস্য, সন্দেহ আর প্রতারণার এক ডিজিটাল বোর্ড গেম</p>
+        <button onclick="openRules()" style="background: transparent; color: var(--accent); border: 1px solid var(--accent); padding: 8px 15px; font-size: 14px; border-radius: 20px; margin-bottom: 20px; width: auto;">📖 খেলার নিয়ম</button>
+        
+        <div style="background:#1a1a1a; padding:25px; border-radius:10px; border:1px solid #333; max-width: 400px; margin:0 auto;">
+            <input type="text" id="playerName" placeholder="আপনার নাম লিখুন..." autocomplete="off" style="margin-bottom: 15px;">
+            
+            <button onclick="createRoom()" style="background: #4CAF50; color: white;">নতুন রুম খুলুন (Host Game)</button>
+            
+            <div style="margin: 20px 0; color: #666; font-size: 14px;">অথবা</div>
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="roomCodeInput" placeholder="রুম কোড (যেমন: ABCD)" style="flex: 2; text-transform: uppercase;" autocomplete="off" onkeypress="handleEnter(event)">
+                <button onclick="joinRoom()" style="flex: 1;">জয়েন</button>
             </div>
         </div>
     </div>
 
-    <div id="joinScreen" class="screen active">
-        <h1>প্রতারণা: ঢাকায় খুন</h1>
-        <p style="color:#aaa; font-style: italic; font-size: 14px;">রহস্য, সন্দেহ আর প্রতারণার এক ডিজিটাল বোর্ড গেম</p>
-        <button onclick="openRules()" style="background: #333; color: white; border: 1px solid var(--accent); padding: 10px 20px; font-size: 15px; border-radius: 20px; margin-top: 5px;">📖 খেলার নিয়ম / Game Rules</button>
-        <div style="background:#1a1a1a; padding:30px 15px; border-radius:10px; border:1px solid #333; max-width: 400px; margin:20px auto;">
-            <input type="text" id="playerName" placeholder="আপনার নাম লিখুন..." autocomplete="off" onkeypress="handleEnter(event)"><br>
-            <button onclick="joinGame()">গেমে যুক্ত হোন</button>
-        </div>
-    </div>
-
+    <!-- Lobby Screen -->
     <div id="lobbyScreen" class="screen">
-        <h2>লবি (অপেক্ষারত...)</h2>
+        <h2>লবি - রুম কোড: <span id="displayRoomCode" style="color:#ff4d4d; letter-spacing: 2px;"></span></h2>
+        <p style="color:#aaa; font-size: 14px; margin-top: -10px;">বন্ধুদের এই কোডটি দিন</p>
         <div class="player-list">
             <h3 style="margin-top:0;">যুক্ত হয়েছেন (<span id="pCount">0</span> জন):</h3>
             <ul id="lobbyPlayers" style="font-size:16px; line-height:1.8; padding-left: 20px;"></ul>
         </div>
         <br>
-        <button id="startGameBtn" style="display:none; background:#4CAF50;" onclick="startGame()">গেম শুরু করুন</button>
-        <p id="waitMsg" style="color:#aaa; font-size: 14px;">হোস্ট গেম শুরু করার জন্য অপেক্ষা করছেন...</p>
+        <div style="max-width: 400px; margin: 0 auto;">
+            <button id="startGameBtn" style="display:none; background:#4CAF50;" onclick="startGame()">গেম শুরু করুন</button>
+            <p id="waitMsg" style="color:#aaa; font-size: 14px;">হোস্ট গেম শুরু করার জন্য অপেক্ষা করছেন...</p>
+        </div>
     </div>
 
+    <!-- Hand Screen -->
     <div id="handScreen" class="screen">
         <h2 id="roleTitle" style="font-size:22px;"></h2>
         <p id="roleDesc" style="color:#ccc; font-size:15px;"></p>
         
         <div id="murdererUI" style="display:none; background:#333; padding:15px; border:1px solid #ff4d4d; border-radius:8px; max-width:600px; margin:0 auto;">
             <p style="color:#ff4d4d; font-size:16px; margin-top:0;">১টি অস্ত্র এবং ১টি প্রমাণ সিলেক্ট করে সাবমিট করুন।</p>
-            <button onclick="submitMurdererChoice()" style="background:#ff4d4d;">সাবমিট করুন</button>
+            <div style="max-width: 250px; margin: 0 auto;">
+                <button onclick="submitMurdererChoice()" style="background:#ff4d4d;">সাবমিট করুন</button>
+            </div>
         </div>
         
         <div style="display:flex; flex-wrap:wrap; gap:15px; text-align:left; margin-top:20px;">
@@ -141,9 +142,12 @@
         </div>
     </div>
 
+    <!-- Investigation Screen -->
     <div id="investigationScreen" class="screen">
         <h2>তদন্তের বোর্ড</h2>
         
+        <div id="replacementLog"></div>
+
         <div id="secretBox" style="display:none; background:#222; padding:15px; border:2px dashed var(--accent); margin-bottom:20px; text-align:left; border-radius:8px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h3 style="color:var(--accent); margin:0; font-size: 18px;">আপনার গোপন তথ্য</h3>
@@ -163,7 +167,6 @@
                 <p id="replaceCounter" style="color:var(--accent); text-align:center; background:#333; padding:8px; border-radius:5px; font-weight:bold; font-size: 14px;"></p>
                 <div id="tilesContainer"></div>
                 
-                <!-- বাতিল করা টাইলস দেখানোর বক্স -->
                 <div id="discardedBox">
                     <strong style="color:#ff4d4d; font-size:16px;">❌ বাতিল করা টাইলস:</strong>
                     <ul id="discardedList"></ul>
@@ -178,7 +181,9 @@
 
         <div id="hostControls" style="display:none; text-align: center; margin-top: 30px; width: 100%; border-top: 1px solid #333; padding-top: 20px;">
             <p style="color: #888; font-size: 14px; margin-bottom: 5px;">গেম শেষ হয়ে গেলে নিচের বাটনে ক্লিক করুন</p>
-            <button onclick="resetGame()" style="background: #4CAF50; width: 90%; max-width: 350px;">🔄 নতুন ম্যাচ শুরু করুন (Play Again)</button>
+            <div style="max-width: 350px; margin: 0 auto;">
+                <button onclick="resetGame()" style="background: #4CAF50;">🔄 নতুন ম্যাচ শুরু করুন</button>
+            </div>
         </div>
     </div>
 
@@ -189,44 +194,65 @@
     <script>
         function openRules() { document.getElementById('rulesModal').style.display = 'flex'; }
         function closeRules() { document.getElementById('rulesModal').style.display = 'none'; }
-        window.onclick = function(event) {
-            let modal = document.getElementById('rulesModal');
-            if (event.target === modal) modal.style.display = "none";
-        }
+        window.onclick = function(event) { if (event.target === document.getElementById('rulesModal')) closeRules(); }
 
-        let socket;
-        try {
-            socket = io({ transports: ['polling', 'websocket'] });
-        } catch(e) {
-            console.log("Socket.io load failed.");
-        }
+        let socket = io({ transports: ['polling', 'websocket'] });
 
+        // Smart Reconnect System variables
+        let myUid = localStorage.getItem('deception_uid');
+        if (!myUid) {
+            myUid = Math.random().toString(36).substring(2, 10);
+            localStorage.setItem('deception_uid', myUid);
+        }
+        let myRoomCode = localStorage.getItem('deception_room');
+        let myName = localStorage.getItem('deception_name');
+        
         let myRole = null;
         let selectedWeapon = null;
         let selectedClue = null;
         let isHost = false;
 
-        function handleEnter(event) {
-            if (event.key === "Enter") joinGame();
-        }
-
-        function joinGame() {
-            try {
-                const name = document.getElementById('playerName').value.trim();
-                if(!name) { alert("দয়া করে আপনার নাম লিখুন!"); return; }
-
-                if (typeof io === 'undefined' || !socket) {
-                    alert("গেমের কানেকশন ফাইল লোড হতে পারেনি! দয়া করে পেজটি রিফ্রেশ দিন।");
-                    return;
-                }
-
-                socket.emit('join_game', {name: name});
-                document.getElementById('joinScreen').classList.remove('active');
-                document.getElementById('lobbyScreen').classList.add('active');
-            } catch (error) {
-                alert("কোথাও একটি সমস্যা হয়েছে: " + error.message);
+        // Auto-reconnect on refresh
+        socket.on('connect', () => {
+            if (myRoomCode && myName) {
+                socket.emit('join_room', { uid: myUid, name: myName, room_code: myRoomCode });
+            } else {
+                if (myName) document.getElementById('playerName').value = myName;
             }
+        });
+
+        function handleEnter(event) { if (event.key === "Enter") joinRoom(); }
+
+        function createRoom() {
+            const name = document.getElementById('playerName').value.trim();
+            if(!name) { alert("দয়া করে আপনার নাম লিখুন!"); return; }
+            
+            myName = name;
+            localStorage.setItem('deception_name', name);
+            socket.emit('create_room', {uid: myUid, name: name});
         }
+
+        function joinRoom() {
+            const name = document.getElementById('playerName').value.trim();
+            const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+            
+            if(!name) { alert("দয়া করে আপনার নাম লিখুন!"); return; }
+            if(!code || code.length !== 4) { alert("দয়া করে ৪ অক্ষরের সঠিক রুম কোড দিন!"); return; }
+            
+            myName = name;
+            localStorage.setItem('deception_name', name);
+            socket.emit('join_room', {uid: myUid, name: name, room_code: code});
+        }
+
+        socket.on('room_joined', (data) => {
+            myRoomCode = data.room_code;
+            isHost = data.is_host;
+            localStorage.setItem('deception_room', myRoomCode);
+            
+            document.getElementById('displayRoomCode').innerText = myRoomCode;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('lobbyScreen').classList.add('active');
+        });
 
         socket.on('update_lobby', (data) => {
             const list = document.getElementById('lobbyPlayers');
@@ -234,56 +260,31 @@
             list.innerHTML = '';
             
             data.players.forEach(p => {
-                let badge = p.sid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
-                list.innerHTML += `<li>${p.name} ${badge}</li>`;
+                let badge = p.uid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
+                let status = p.online ? '' : '<span style="color:#888; font-size:12px; margin-left:5px;">(Offline)</span>';
+                list.innerHTML += `<li>${p.name} ${badge} ${status}</li>`;
             });
             
-            if (socket.id === data.host) {
-                isHost = true;
+            if (isHost) {
                 document.getElementById('startGameBtn').style.display = 'block';
                 document.getElementById('waitMsg').style.display = 'none';
             } else {
-                isHost = false;
                 document.getElementById('startGameBtn').style.display = 'none';
                 document.getElementById('waitMsg').style.display = 'block';
             }
         });
 
-        function startGame() { socket.emit('start_game'); }
+        function startGame() { socket.emit('start_game', {room_code: myRoomCode}); }
 
-        function resetGame() {
-            if(confirm("আপনি কি নিশ্চিত যে বর্তমান গেমটি শেষ করে নতুন ম্যাচ শুরু করতে চান?")) {
-                socket.emit('reset_game');
-            }
-        }
-
-        socket.on('back_to_lobby', (data) => {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('lobbyScreen').classList.add('active');
-            document.getElementById('hostControls').style.display = 'none';
-            document.getElementById('discardedBox').style.display = 'none'; // বাতিল বক্স গেম শেষে লুকানো
-            
-            const list = document.getElementById('lobbyPlayers');
-            document.getElementById('pCount').innerText = data.players.length;
-            list.innerHTML = '';
-            
-            data.players.forEach(p => {
-                let badge = p.sid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
-                list.innerHTML += `<li>${p.name} ${badge}</li>`;
-            });
-            
-            if (socket.id === data.host) {
-                isHost = true;
-                document.getElementById('startGameBtn').style.display = 'block';
-                document.getElementById('waitMsg').style.display = 'none';
-            } else {
-                isHost = false;
-                document.getElementById('startGameBtn').style.display = 'none';
-                document.getElementById('waitMsg').style.display = 'block';
+        socket.on('error', (data) => { 
+            alert(data.msg); 
+            if (data.clear_storage) {
+                localStorage.removeItem('deception_room');
+                myRoomCode = null;
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('joinScreen').classList.add('active');
             }
         });
-
-        socket.on('error', (data) => { alert(data.msg); });
 
         socket.on('game_started', (data) => {
             myRole = data.role;
@@ -335,7 +336,7 @@
 
         function submitMurdererChoice() {
             if(!selectedWeapon || !selectedClue) { alert("১টি লাল এবং ১টি নীল কার্ড সিলেক্ট করুন!"); return; }
-            socket.emit('murderer_selected', {weapon: selectedWeapon, clue: selectedClue});
+            socket.emit('murderer_selected', {uid: myUid, room_code: myRoomCode, weapon: selectedWeapon, clue: selectedClue});
             document.getElementById('murdererUI').style.display = 'none';
             document.getElementById('roleDesc').innerText = "আপনার পছন্দ সাবমিট হয়েছে। তদন্ত শুরু হচ্ছে...";
         }
@@ -360,6 +361,7 @@
         socket.on('investigation_started', (data) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('investigationScreen').classList.add('active');
+            document.getElementById('replacementLog').style.display = 'none';
 
             if(myRole === 'ফরেনসিক বিজ্ঞানী') {
                 document.getElementById('secretBox').style.display = 'block';
@@ -370,13 +372,11 @@
                 document.getElementById('sClue').innerText = data.secret.clue;
             }
             
-            if (isHost) {
-                document.getElementById('hostControls').style.display = 'block';
-            }
+            if (isHost) document.getElementById('hostControls').style.display = 'block';
 
             renderPublicTable(data.players);
-            renderTiles(data.active_tiles, data.replace_count);
-            renderDiscardedTiles(data.discarded_tiles); // বাতিল টাইলস রেন্ডার
+            renderTiles(data.active_tiles, data.replace_count, data.tile_selections);
+            renderDiscardedTiles(data.discarded_tiles);
         });
 
         function renderPublicTable(players) {
@@ -385,26 +385,24 @@
             players.forEach(p => {
                 if(p.role !== 'বিজ্ঞানী') {
                     let html = `<div class="public-player-box"><h3 style="margin-top:0; font-size:16px;">${p.name}</h3><div class="public-cards-container">`;
-                    
                     html += `<div class="public-cards-half"><strong style="color:#ff4d4d; font-size:14px; display:block; margin-bottom:5px;">অস্ত্র (লাল):</strong><div class="public-card-grid">`;
                     p.means.forEach(m => html += `<div class="public-card means">${m}</div>`);
                     html += `</div></div>`;
-
                     html += `<div class="public-cards-half"><strong style="color:#5da2d5; font-size:14px; display:block; margin-bottom:5px;">প্রমাণ (নীল):</strong><div class="public-card-grid">`;
                     p.clues.forEach(c => html += `<div class="public-card clue">${c}</div>`);
-                    html += `</div></div>`;
-                    
-                    html += `</div></div>`;
+                    html += `</div></div></div></div>`;
                     pt.innerHTML += html;
                 }
             });
         }
 
-        function renderTiles(tiles, replaceCount) {
-            let savedSelections = {};
-            document.querySelectorAll('.scene-tile select').forEach(sel => {
-                savedSelections[sel.id] = sel.value;
-            });
+        function renderTiles(tiles, replaceCount, selections = {}) {
+            let savedSelections = selections;
+            if (Object.keys(savedSelections).length === 0) {
+                document.querySelectorAll('.scene-tile select').forEach(sel => {
+                    savedSelections[sel.id.replace('sel-', '')] = sel.value;
+                });
+            }
 
             const counterDiv = document.getElementById('replaceCounter');
             if(replaceCount > 0) {
@@ -424,36 +422,28 @@
                         <strong>${t.name}</strong>`;
                 
                 if(!t.isRequired && myRole === 'ফরেনসিক বিজ্ঞানী' && replaceCount > 0) {
-                    html += `<button style="padding:4px 8px; font-size:12px; margin:0; background:#222; color:white; border:1px solid #ffb366; width:auto;" onclick="socket.emit('replace_tile', {tile_id: '${t.id}'})">🔄 বদলান</button>`;
+                    html += `<button style="padding:4px 8px; font-size:12px; margin:0; background:#222; color:white; border:1px solid #ffb366; width:auto;" onclick="socket.emit('replace_tile', {uid: myUid, room_code: myRoomCode, tile_id: '${t.id}'})">🔄 বদলান</button>`;
                 }
                 
                 html += `</div><select id="sel-${t.id}" ${myRole !== 'ফরেনসিক বিজ্ঞানী' ? 'disabled' : ''} onchange="tileChanged('${t.id}')">`;
-                t.options.forEach(opt => {
-                    html += `<option value="${opt}">${opt}</option>`;
-                });
+                t.options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
                 html += `</select></div>`;
                 tc.innerHTML += html;
             });
 
             Object.keys(savedSelections).forEach(id => {
-                let sel = document.getElementById(id);
-                if (sel) {
-                    sel.value = savedSelections[id];
-                }
+                let sel = document.getElementById(`sel-${id}`);
+                if (sel) sel.value = savedSelections[id];
             });
         }
 
-        // --- বাতিল টাইলস দেখানোর ফাংশন ---
         function renderDiscardedTiles(discarded) {
             const box = document.getElementById('discardedBox');
             const list = document.getElementById('discardedList');
-            
             if (discarded && discarded.length > 0) {
                 box.style.display = 'block';
                 list.innerHTML = '';
-                discarded.forEach(tileName => {
-                    list.innerHTML += `<li><strong>${tileName}</strong></li>`;
-                });
+                discarded.forEach(tileName => { list.innerHTML += `<li><strong>${tileName}</strong></li>`; });
             } else {
                 box.style.display = 'none';
                 list.innerHTML = '';
@@ -463,7 +453,7 @@
         function tileChanged(tileId) {
             if(myRole === 'ফরেনসিক বিজ্ঞানী') {
                 const val = document.getElementById(`sel-${tileId}`).value;
-                socket.emit('update_tile_selection', {tile_id: tileId, value: val});
+                socket.emit('update_tile_selection', {uid: myUid, room_code: myRoomCode, tile_id: tileId, value: val});
             }
         }
 
@@ -472,10 +462,25 @@
             if(sel) sel.value = data.value;
         });
 
-        // টাইলস বদলানোর সময় লিস্ট আপডেট হবে
         socket.on('tile_replaced', (data) => {
             renderTiles(data.active_tiles, data.replace_count);
             renderDiscardedTiles(data.discarded_tiles);
+            const logBox = document.getElementById('replacementLog');
+            logBox.style.display = 'block';
+            logBox.innerHTML = `🔄 <strong>বিজ্ঞানী আপডেট:</strong> "${data.old_tile}" টাইলটি পরিবর্তন করে একটি নতুন ক্লু আনা হয়েছে!`;
+        });
+
+        function resetGame() {
+            if(confirm("আপনি কি নিশ্চিত যে বর্তমান গেমটি শেষ করে নতুন ম্যাচ শুরু করতে চান?")) {
+                socket.emit('reset_game', {uid: myUid, room_code: myRoomCode});
+            }
+        }
+
+        socket.on('back_to_lobby', (data) => {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('lobbyScreen').classList.add('active');
+            document.getElementById('hostControls').style.display = 'none';
+            document.getElementById('discardedBox').style.display = 'none';
         });
     </script>
 </body>
