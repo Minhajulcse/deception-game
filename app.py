@@ -1,15 +1,15 @@
 import os
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
 import random
+import string
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit, join_room
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'deception-secret-key-123'
-
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', ping_timeout=60)
 
 meansDB = ["মদ / অ্যালকোহল", "অ্যামিবা বা জীবাণু", "আর্সেনিক", "অগ্নিসংযোগ", "কুড়াল", "বাঁশ", "ক্রিকেট ব্যাট", "চামড়ার বেল্ট", "কামড়ানো ও ছিঁড়ে ফেলা", "ধারালো অস্ত্র", "ব্লেন্ডার", "অতিরিক্ত রক্তক্ষরণ", "এন্টিকাটার", "ইট", "জীবন্ত কবর দেওয়া", "মোমবাতি দানি", "চেইনস", "চাপাতি", "ক্রাচ", "ছোরা", "দূষিত পানি", "অঙ্গচ্ছেদ", "ড্রিল মেশিন", "পানিতে ডোবানো", "ডাম্বেল", "ই-বাইক", "ইলেকট্রিক ব্যাটন", "বৈদ্যুতিক শক", "বিস্ফোরক", "ফোল্ডিং চেয়ার", "বন্দুক", "হাতুড়ি", "লোহার আংটা", "আইস স্কেটস", "অবৈধ মাদক", "ইনজেকশন", "কেরোসিন", "লাথি", "চাকু", "লাইটার ফ্লুইড", "রামদা", "মেশিনগান", "পাগলা কুকুর", "দেশলাই", "পারদ", "লোহার শিকল", "জিআই তার", "ওভারডোজ", "কস্টেপ", "কীটনাশক", "ঘুমের বড়ি", "বালিশ", "পিস্তল", "মহামারী", "পলিথিন ব্যাগ", "বিষাক্ত তীর", "বিষাক্ত গ্যাস", "বিষাক্ত সুই", "টবের গাছ", "পাউডার", "ঘুষি", "ধাক্কা দেওয়া", "তেজস্ক্রিয় বিকিরণ", "রেজর ব্লেড", "রশি / দড়ি", "ওড়না", "কাঁচি", "ভাস্কর্য", "গুলি করা", "স্নাইপার রাইফেল", "অনাহার", "লোহার রড", "পাথর", "এসিড", "তলোয়ার", "টেজার", "গামছা", "ট্রফি", "খুরপি", "খালি হাত", "বিষাক্ত বিচ্ছু", "বিষধর সাপ", "গেম কনসোল", "ভাইরাস", "চাবুক", "ওয়াইন", "ইলেকট্রিক তার", "কাঠের টুকরো", "বুট জুতো", "রেঞ্চ"]
-cluesDB = ["আপেল", "ব্যাজ", "ব্যান্ডেজ", "টাকার নোট", "ঘণ্টা", "রক্ত", "হাড়", "বই", "ব্রেসলেট", "পাউরুটি", "ব্রিফকেস", "ঝাড়ু", "গুলির খোসা", "বোতাম", "কেক", "ক্যালেন্ডার", "চকলেট", "বেত", "ক্যাসেট টেপ", "বিড়াল", "মোবাইল ফোন", "চক", "চুরুট", "সিগারেটের ছাই", "সিগারেটের ফিল্টার", "পরিষ্কার করার ন্যাকড়া", "ঘড়ি", "কাপড়চোপড়", "কোস্টার", "কয়েন", "কমিক বই", "কম্পিউটার", "সিডি/ডিভিডি", "কম্পিউটার মাউস", "কন্টাক্ট লেন্স", "কসমেটিকস", "তুলা", "চায়ের কাপ", "পর্দা", "নকল দাঁত", "হীরা", "ডায়েরি", "ডিকশনারি", "কাদা", "নথিপত্র", "কুকুর", "ধুলা", "কানের দুল", "কেঁচো", "খাম", "পরীক্ষার খাতা", "কুরিয়ারের প্যাকেট", "ফ্যান", "পালক", "সুতা", "নখ", "আঙুলের ছাপ", "বাঁশি", "লিফলেট", "খাবার", "প পায়ের ছাপ", "কাঁটাচামচ", "নষ্ট বাল্ব", "গিয়ার", "উপহার", "চশমা", "গ্লাভস", "আঠা", "চুল", "চুলের ক্লিপ", "চিরুনি", "হাতকড়া", "রুমাল", "পেনড্রাইভ", "টুপি", "হেডফোন", "হেলমেট", "আইডি কার্ড", "বরফ", "আইসক্রিম", "কালি", "পোকা", "ব্রডব্যান্ড তার", "দাওয়াত কার্ড", "জ্যাকেট", "গহনা", "জুস", "চাবি", "গাছের পাতা", "চামড়া", "চামড়ার জুতা", "ক্যামেরার লেন্স", "চিঠি", "লাইটার", "লিপস্টিক", "তালা", "লটারির টিকিট", "প্রেমের চিঠি", "সুটকেস", "টিফিন বক্স", "ম্যাগাজিন", "আতশ কাঁচ", "মানচিত্র", "মাস্ক", "দেশলাইয়ের কাঠি", "ঔষধ", "রেস্টুরেন্টের মেনু", "মাইক্রোফোন", "আয়না", "স্মার্টফোন", "খেলনা গাড়ি", "মশার কয়েল", "পেরেক", "গলার হার", "সুই", "পত্রিকা", "চিরকুট", "খাতা", "নাট-বল্টু", "তেল", "রং", "অন্তর্বাস", "পাসপোর্ট", "পাসওয়ার্ড", "বাদাম", "কলম", "পার্স", "প্লাস্টিকের বোতল", "সিরাপ"]
+cluesDB = ["আপেল", "ব্যাজ", "ব্যান্ডেজ", "টাকার নোট", "ঘণ্টা", "রক্ত", "হাড়", "বই", "ব্রেসলেট", "পাউরুটি", "ব্রিফকেস", "ঝাড়ু", "গুলির খোসা", "বোতাম", "কেক", "ক্যালেন্ডার", "চকলেট", "বেত", "ক্যাসেট টেপ", "বিড়াল", "মোবাইল ফোন", "চক", "চুরুট", "সিগারেটের ছাই", "সিগারেটের ফিল্টার", "পরিষ্কার করার ন্যাকড়া", "ঘড়ি", "কাপড়চোপড়", "কোস্টার", "কয়েন", "কমিক বই", "কম্পিউটার", "সিডি/ডিভিডি", "কম্পিউটার মাউস", "কন্টাক্ট লেন্স", "কসমেটিকস", "তুলা", "চায়ের কাপ", "পর্দা", "নকল দাঁত", "হীরা", "ডায়েরি", "ডিকশনারি", "কাদা", "নথিপত্র", "কুকুর", "ধুলা", "কানের দুল", "কেঁচো", "খাম", "পরীক্ষার খাতা", "কুরিয়ারের প্যাকেট", "ফ্যান", "পালক", "সুতা", "নখ", "আঙুলের ছাপ", "বাঁশি", "লিফলেট", "খাবার", "পায়ের ছাপ", "কাঁটাচামচ", "নষ্ট বাল্ব", "গিয়ার", "উপহার", "চশমা", "গ্লাভস", "আঠা", "চুল", "চুলের ক্লিপ", "চিরুনি", "হাতকড়া", "রুমাল", "পেনড্রাইভ", "টুপি", "হেডফোন", "হেলমেট", "আইডি কার্ড", "বরফ", "আইসক্রিম", "কালি", "পোকা", "ব্রডব্যান্ড তার", "দাওয়াত কার্ড", "জ্যাকেট", "গহনা", "জুস", "চাবি", "গাছের পাতা", "চামড়া", "চামড়ার জুতা", "ক্যামেরার লেন্স", "চিঠি", "লাইটার", "লিপস্টিক", "তালা", "লটারির টিকিট", "প্রেমের চিঠি", "সুটকেস", "টিফিন বক্স", "ম্যাগাজিন", "আতশ কাঁচ", "মানচিত্র", "মাস্ক", "দেশলাইয়ের কাঠি", "ঔষধ", "রেস্টুরেন্টের মেনু", "মাইক্রোফোন", "আয়না", "স্মার্টফোন", "খেলনা গাড়ি", "মশার কয়েল", "পেরেক", "গলার হার", "সুই", "পত্রিকা", "চিরকুট", "খাতা", "নাট-বল্টু", "তেল", "রং", "অন্তর্বাস", "পাসপোর্ট", "পাসওয়ার্ড", "বাদাম", "কলম", "পার্স", "প্লাস্টিকের বোতল", "সিরাপ"]
 
 sceneDB = [
     {"id": "cause", "name": "মৃত্যুর কারণ (বাধ্যতামূলক)", "isRequired": True, "options": ["-সিলেক্ট করুন-", "শ্বাসরোধ", "গুরুতর আঘাত", "অতিরিক্ত রক্তক্ষরণ", "অসুস্থতা / রোগ", "বিষক্রিয়া", "দুর্ঘটনা"]},
@@ -33,87 +33,161 @@ sceneDB = [
     {"id": "t15", "name": "সাধারণ ধারণা", "isRequired": False, "options": ["-সিলেক্ট করুন-", "সাধারণ", "প্রান্তিক", "আনুষ্ঠানিক", "ঠান্ডা", "গরম", "আকর্ষণীয়"]}
 ]
 
-game_state = {
-    'status': 'waiting',
-    'players': {}, 
-    'host_sid': None,
-    'murderer_data': {'weapon': None, 'clue': None, 'ready': False},
-    'active_tiles': [],
-    'deck_tiles': [],
-    'discarded_tiles': [], # বাতিল করা টাইলস সেভ রাখার জন্য
-    'replace_count': 2
-}
+# Separate Rooms System
+rooms = {}
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@socketio.on('join_game')
-def handle_join(data):
+def get_lobby_data(room_code):
+    if room_code not in rooms: return {'players': [], 'host': None}
+    room = rooms[room_code]
+    return {
+        'players': [{'name': p['name'], 'uid': uid, 'online': p['online']} for uid, p in room['players'].items()],
+        'host': room['host_uid']
+    }
+
+@socketio.on('create_room')
+def handle_create(data):
+    uid = data['uid']
     name = data['name']
     
-    if not game_state['host_sid'] or game_state['host_sid'] not in game_state['players']:
-        game_state['host_sid'] = request.sid
-
-    game_state['players'][request.sid] = {
-        'name': name,
-        'role': None,
-        'means': [],
-        'clues': [],
-        'ready': False
+    # Generate 4-letter unique code
+    room_code = ''.join(random.choices(string.ascii_uppercase, k=4))
+    while room_code in rooms:
+        room_code = ''.join(random.choices(string.ascii_uppercase, k=4))
+        
+    rooms[room_code] = {
+        'status': 'waiting',
+        'host_uid': uid,
+        'players': {},
+        'murderer_data': {'weapon': None, 'clue': None, 'ready': False},
+        'active_tiles': [],
+        'deck_tiles': [],
+        'discarded_tiles': [],
+        'tile_selections': {}, # Refresh-এর জন্য সেভ রাখা
+        'replace_count': 2
     }
     
-    emit('update_lobby', get_lobby_data(), broadcast=True)
-
-def get_lobby_data():
-    return {
-        'players': [{'name': p['name'], 'sid': sid} for sid, p in game_state['players'].items()],
-        'host': game_state['host_sid']
-    }
-
-@socketio.on('start_game')
-def handle_start():
-    if request.sid != game_state['host_sid']:
-        return
+    join_room(room_code)
+    rooms[room_code]['players'][uid] = {'name': name, 'sid': request.sid, 'role': None, 'means': [], 'clues': [], 'online': True}
     
-    player_sids = list(game_state['players'].keys())
-    count = len(player_sids)
-    if count < 4:
-        emit('error', {'msg': 'কমপক্ষে ৪ জন প্লেয়ার দরকার! বন্ধুদের জয়েন করতে বলুন।'}, to=request.sid)
+    emit('room_joined', {'room_code': room_code, 'uid': uid, 'is_host': True}, to=request.sid)
+    emit('update_lobby', get_lobby_data(room_code), to=room_code)
+
+@socketio.on('join_room')
+def handle_join(data):
+    uid = data['uid']
+    name = data['name']
+    room_code = data['room_code'].upper()
+    
+    if room_code not in rooms:
+        emit('error', {'msg': 'রুম কোডটি ভুল বা গেমটি আর নেই! নতুন রুম তৈরি করুন।', 'clear_storage': True}, to=request.sid)
         return
         
-    game_state['status'] = 'selecting'
-    game_state['murderer_data'] = {'weapon': None, 'clue': None, 'ready': False}
+    room = rooms[room_code]
+    
+    # Check if a new player is joining an active game
+    if uid not in room['players'] and room['status'] != 'waiting':
+        emit('error', {'msg': 'এই রুমে অলরেডি গেম চলছে! এখন জয়েন করা যাবে না।', 'clear_storage': True}, to=request.sid)
+        return
+        
+    join_room(room_code)
+    
+    if uid not in room['players']:
+        room['players'][uid] = {'name': name, 'sid': request.sid, 'role': None, 'means': [], 'clues': [], 'online': True}
+    else:
+        # Reconnecting
+        room['players'][uid]['sid'] = request.sid
+        room['players'][uid]['online'] = True
+        
+    if not room['host_uid'] or room['host_uid'] not in room['players']:
+        room['host_uid'] = uid
+        
+    is_host = (room['host_uid'] == uid)
+    emit('room_joined', {'room_code': room_code, 'uid': uid, 'is_host': is_host}, to=request.sid)
+    emit('update_lobby', get_lobby_data(room_code), to=room_code)
+    
+    # Recover game state if refreshing
+    if room['status'] != 'waiting':
+        recover_game_state(room_code, uid, request.sid)
+
+def recover_game_state(room_code, uid, sid):
+    room = rooms[room_code]
+    p = room['players'][uid]
+    if not p['role']: return
+    
+    emit('game_started', {'role': p['role'], 'means': p['means'], 'clues': p['clues']}, to=sid)
+    
+    if room['status'] == 'playing':
+        public_data = {
+            'players': [{'name': v['name'], 'role': 'বিজ্ঞানী' if v['role']=='ফরেনসিক বিজ্ঞানী' else 'player', 'means': v['means'], 'clues': v['clues']} for k, v in room['players'].items()],
+            'active_tiles': room['active_tiles'],
+            'discarded_tiles': room['discarded_tiles'],
+            'tile_selections': room['tile_selections'],
+            'replace_count': room['replace_count']
+        }
+        if p['role'] == 'ফরেনসিক বিজ্ঞানী':
+            murderer_name = next(v['name'] for k, v in room['players'].items() if v['role'] == 'খুনি')
+            emit('investigation_started', {
+                **public_data, 
+                'secret': {
+                    'murderer': murderer_name, 
+                    'weapon': room['murderer_data']['weapon'], 
+                    'clue': room['murderer_data']['clue']
+                }
+            }, to=sid)
+        else:
+            emit('investigation_started', public_data, to=sid)
+
+@socketio.on('start_game')
+def handle_start(data):
+    room_code = data['room_code']
+    room = rooms[room_code]
+    
+    if request.sid != room['players'][room['host_uid']]['sid']: return
+    
+    uids = list(room['players'].keys())
+    if len(uids) < 4:
+        emit('error', {'msg': 'কমপক্ষে ৪ জন প্লেয়ার দরকার!'}, to=request.sid)
+        return
+        
+    room['status'] = 'selecting'
+    room['murderer_data'] = {'weapon': None, 'clue': None, 'ready': False}
+    room['tile_selections'] = {}
     
     roles = ["খুনি", "ফরেনসিক বিজ্ঞানী", "তদন্তকারী", "তদন্তকারী"]
-    for i in range(4, count): roles.append("তদন্তকারী")
-    if count >= 6: roles[roles.index("তদন্তকারী")] = "সহযোগী"
-    if count >= 8: roles[roles.index("তদন্তকারী")] = "সাক্ষী"
+    for i in range(4, len(uids)): roles.append("তদন্তকারী")
+    if len(uids) >= 6: roles[roles.index("তদন্তকারী")] = "সহযোগী"
+    if len(uids) >= 8: roles[roles.index("তদন্তকারী")] = "সাক্ষী"
     
     random.shuffle(roles)
     shuffled_means = random.sample(meansDB, len(meansDB))
     shuffled_clues = random.sample(cluesDB, len(cluesDB))
     
-    for i, sid in enumerate(player_sids):
+    for i, uid in enumerate(uids):
         role = roles[i]
-        game_state['players'][sid]['role'] = role
+        room['players'][uid]['role'] = role
         if role != "ফরেনসিক বিজ্ঞানী":
-            game_state['players'][sid]['means'] = [shuffled_means.pop() for _ in range(4)]
-            game_state['players'][sid]['clues'] = [shuffled_clues.pop() for _ in range(4)]
+            room['players'][uid]['means'] = [shuffled_means.pop() for _ in range(4)]
+            room['players'][uid]['clues'] = [shuffled_clues.pop() for _ in range(4)]
         else:
-            game_state['players'][sid]['means'] = []
-            game_state['players'][sid]['clues'] = []
+            room['players'][uid]['means'] = []
+            room['players'][uid]['clues'] = []
             
-        emit('game_started', {'role': role, 'means': game_state['players'][sid]['means'], 'clues': game_state['players'][sid]['clues']}, to=sid)
+        emit('game_started', {'role': role, 'means': room['players'][uid]['means'], 'clues': room['players'][uid]['clues']}, to=room['players'][uid]['sid'])
 
 @socketio.on('murderer_selected')
 def handle_murderer_selection(data):
-    if game_state['players'][request.sid]['role'] != 'খুনি': return
-    game_state['murderer_data'] = {'weapon': data['weapon'], 'clue': data['clue'], 'ready': True}
-    start_investigation()
-
-def start_investigation():
-    game_state['status'] = 'playing'
+    room_code = data['room_code']
+    room = rooms[room_code]
+    uid = data['uid']
+    
+    if room['players'][uid]['role'] != 'খুনি': return
+    room['murderer_data'] = {'weapon': data['weapon'], 'clue': data['clue'], 'ready': True}
+    
+    room['status'] = 'playing'
     cause_tile = next(t for t in sceneDB if t['id'] == 'cause')
     loc_tiles = [t for t in sceneDB if t['id'].startswith('loc')]
     other_tiles = [t for t in sceneDB if not t['isRequired']]
@@ -121,89 +195,89 @@ def start_investigation():
     random.shuffle(loc_tiles)
     random.shuffle(other_tiles)
     
-    game_state['active_tiles'] = [cause_tile, loc_tiles[0], other_tiles[0], other_tiles[1], other_tiles[2], other_tiles[3]]
-    game_state['deck_tiles'] = other_tiles[4:]
-    game_state['discarded_tiles'] = [] # গেম শুরুতে বাতিল টাইলস ফাঁকা
-    game_state['replace_count'] = 2
+    room['active_tiles'] = [cause_tile, loc_tiles[0], other_tiles[0], other_tiles[1], other_tiles[2], other_tiles[3]]
+    room['deck_tiles'] = other_tiles[4:]
+    room['discarded_tiles'] = []
+    room['replace_count'] = 2
     
-    public_data = {
-        'players': [{'name': p['name'], 'role': 'বিজ্ঞানী' if p['role']=='ফরেনসিক বিজ্ঞানী' else 'player', 'means': p['means'], 'clues': p['clues']} for sid, p in game_state['players'].items()],
-        'active_tiles': game_state['active_tiles'],
-        'discarded_tiles': game_state['discarded_tiles'],
-        'replace_count': game_state['replace_count']
-    }
-    
-    for sid, p in game_state['players'].items():
-        if p['role'] == 'ফরেনসিক বিজ্ঞানী':
-            murderer_name = next(player['name'] for player in game_state['players'].values() if player['role'] == 'খুনি')
-            emit('investigation_started', {
-                **public_data, 
-                'secret': {
-                    'murderer': murderer_name, 
-                    'weapon': game_state['murderer_data']['weapon'], 
-                    'clue': game_state['murderer_data']['clue']
-                }
-            }, to=sid)
-        else:
-            emit('investigation_started', public_data, to=sid)
+    for sid_data in room['players'].values():
+        recover_game_state(room_code, next(k for k,v in room['players'].items() if v==sid_data), sid_data['sid'])
 
 @socketio.on('update_tile_selection')
 def handle_tile_update(data):
-    if game_state['players'][request.sid]['role'] == 'ফরেনসিক বিজ্ঞানী':
-        emit('tile_updated', data, broadcast=True, include_self=False)
+    room_code = data['room_code']
+    room = rooms[room_code]
+    uid = data['uid']
+    
+    if room['players'][uid]['role'] == 'ফরেনসিক বিজ্ঞানী':
+        room['tile_selections'][data['tile_id']] = data['value']
+        emit('tile_updated', data, to=room_code, include_self=False)
 
 @socketio.on('replace_tile')
 def handle_replace_tile(data):
-    if game_state['players'][request.sid]['role'] != 'ফরেনসিক বিজ্ঞানী': return
-    if game_state['replace_count'] <= 0 or len(game_state['deck_tiles']) == 0: return
+    room_code = data['room_code']
+    room = rooms[room_code]
+    uid = data['uid']
+    
+    if room['players'][uid]['role'] != 'ফরেনসিক বিজ্ঞানী': return
+    if room['replace_count'] <= 0 or len(room['deck_tiles']) == 0: return
     
     tile_id = data['tile_id']
-    for i, t in enumerate(game_state['active_tiles']):
+    for i, t in enumerate(room['active_tiles']):
         if t['id'] == tile_id:
             old_tile_name = t['name']
-            game_state['discarded_tiles'].append(old_tile_name) # বাতিল টাইলস সেভ করা হচ্ছে
+            room['discarded_tiles'].append(old_tile_name)
             
-            new_tile = game_state['deck_tiles'].pop(0)
-            game_state['active_tiles'][i] = new_tile
-            game_state['replace_count'] -= 1
+            new_tile = room['deck_tiles'].pop(0)
+            room['active_tiles'][i] = new_tile
+            room['replace_count'] -= 1
             
             emit('tile_replaced', {
                 'old_tile': old_tile_name,
-                'active_tiles': game_state['active_tiles'],
-                'discarded_tiles': game_state['discarded_tiles'],
-                'replace_count': game_state['replace_count']
-            }, broadcast=True)
+                'active_tiles': room['active_tiles'],
+                'discarded_tiles': room['discarded_tiles'],
+                'replace_count': room['replace_count']
+            }, to=room_code)
             break
 
 @socketio.on('reset_game')
-def handle_reset():
-    if request.sid != game_state['host_sid']:
-        return
+def handle_reset(data):
+    room_code = data['room_code']
+    room = rooms[room_code]
+    uid = data['uid']
     
-    game_state['status'] = 'waiting'
-    game_state['murderer_data'] = {'weapon': None, 'clue': None, 'ready': False}
-    game_state['active_tiles'] = []
-    game_state['deck_tiles'] = []
-    game_state['discarded_tiles'] = []
-    game_state['replace_count'] = 2
+    if uid != room['host_uid']: return
     
-    for sid in game_state['players']:
-        game_state['players'][sid]['role'] = None
-        game_state['players'][sid]['means'] = []
-        game_state['players'][sid]['clues'] = []
-        game_state['players'][sid]['ready'] = False
+    room['status'] = 'waiting'
+    room['murderer_data'] = {'weapon': None, 'clue': None, 'ready': False}
+    room['active_tiles'] = []
+    room['deck_tiles'] = []
+    room['discarded_tiles'] = []
+    room['tile_selections'] = {}
+    room['replace_count'] = 2
+    
+    for player_uid in room['players']:
+        room['players'][player_uid]['role'] = None
+        room['players'][player_uid]['means'] = []
+        room['players'][player_uid]['clues'] = []
         
-    emit('back_to_lobby', get_lobby_data(), broadcast=True)
+    emit('back_to_lobby', get_lobby_data(room_code), to=room_code)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    if request.sid in game_state['players']:
-        del game_state['players'][request.sid]
-        
-        if request.sid == game_state['host_sid']:
-            game_state['host_sid'] = list(game_state['players'].keys())[0] if game_state['players'] else None
-            
-        emit('update_lobby', get_lobby_data(), broadcast=True)
+    for room_code, room in rooms.items():
+        for uid, p in list(room['players'].items()):
+            if p.get('sid') == request.sid:
+                p['online'] = False
+                
+                # যদি লবিতে থাকা অবস্থায় লিভ নেয়, তাকে ডিলিট করে দাও
+                if room['status'] == 'waiting':
+                    del room['players'][uid]
+                    if room['host_uid'] == uid and room['players']:
+                        room['host_uid'] = list(room['players'].keys())[0]
+                
+                emit('update_lobby', get_lobby_data(room_code), to=room_code)
+                return
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
