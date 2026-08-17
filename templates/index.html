@@ -79,7 +79,7 @@
         </div>
     </div>
 
-    <!-- Join Screen (New Room System) -->
+    <!-- Join Screen -->
     <div id="joinScreen" class="screen active">
         <h1>প্রতারণা: ঢাকায় খুন</h1>
         <p style="color:#aaa; font-style: italic; font-size: 14px; margin-bottom: 5px;">রহস্য, সন্দেহ আর প্রতারণার এক ডিজিটাল বোর্ড গেম</p>
@@ -109,8 +109,11 @@
         </div>
         <br>
         <div style="max-width: 400px; margin: 0 auto;">
-            <button id="startGameBtn" style="display:none; background:#4CAF50;" onclick="startGame()">গেম শুরু করুন</button>
+            <button id="startGameBtn" style="display:none; background:#4CAF50; width: 100%; margin-bottom: 10px;" onclick="startGame()">গেম শুরু করুন</button>
             <p id="waitMsg" style="color:#aaa; font-size: 14px;">হোস্ট গেম শুরু করার জন্য অপেক্ষা করছেন...</p>
+            
+            <!-- রুম থেকে বের হওয়ার বাটন -->
+            <button onclick="leaveRoom()" style="background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; padding: 10px; font-size: 15px; margin-top: 15px; width: 100%;">🚪 রুম থেকে বের হোন (Leave Room)</button>
         </div>
     </div>
 
@@ -198,7 +201,6 @@
 
         let socket = io({ transports: ['polling', 'websocket'] });
 
-        // Smart Reconnect System variables
         let myUid = localStorage.getItem('deception_uid');
         if (!myUid) {
             myUid = Math.random().toString(36).substring(2, 10);
@@ -212,7 +214,6 @@
         let selectedClue = null;
         let isHost = false;
 
-        // Auto-reconnect on refresh
         socket.on('connect', () => {
             if (myRoomCode && myName) {
                 socket.emit('join_room', { uid: myUid, name: myName, room_code: myRoomCode });
@@ -242,6 +243,22 @@
             myName = name;
             localStorage.setItem('deception_name', name);
             socket.emit('join_room', {uid: myUid, name: name, room_code: code});
+        }
+
+        // --- রুম থেকে বের হওয়ার ফাংশন ---
+        function leaveRoom() {
+            if(confirm("আপনি কি নিশ্চিত যে আপনি রুম থেকে বের হতে চান?")) {
+                socket.emit('leave_room_event', {uid: myUid, room_code: myRoomCode});
+                
+                // লোকাল ডাটা ক্লিয়ার করে দেওয়া
+                localStorage.removeItem('deception_room');
+                myRoomCode = null;
+                isHost = false;
+                
+                // মূল স্ক্রিনে ফেরত পাঠানো
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('joinScreen').classList.add('active');
+            }
         }
 
         socket.on('room_joined', (data) => {
@@ -481,6 +498,24 @@
             document.getElementById('lobbyScreen').classList.add('active');
             document.getElementById('hostControls').style.display = 'none';
             document.getElementById('discardedBox').style.display = 'none';
+            
+            const list = document.getElementById('lobbyPlayers');
+            document.getElementById('pCount').innerText = data.players.length;
+            list.innerHTML = '';
+            
+            data.players.forEach(p => {
+                let badge = p.uid === data.host ? '<span style="background:var(--accent); color:#000; padding:2px 5px; border-radius:4px; font-size:11px; margin-left:8px; vertical-align: middle;">হোস্ট</span>' : '';
+                let status = p.online ? '' : '<span style="color:#888; font-size:12px; margin-left:5px;">(Offline)</span>';
+                list.innerHTML += `<li>${p.name} ${badge} ${status}</li>`;
+            });
+            
+            if (isHost) {
+                document.getElementById('startGameBtn').style.display = 'block';
+                document.getElementById('waitMsg').style.display = 'none';
+            } else {
+                document.getElementById('startGameBtn').style.display = 'none';
+                document.getElementById('waitMsg').style.display = 'block';
+            }
         });
     </script>
 </body>
