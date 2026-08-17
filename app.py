@@ -2,7 +2,7 @@ import os
 import random
 import string
 from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'deception-secret-key-123'
@@ -33,7 +33,6 @@ sceneDB = [
     {"id": "t15", "name": "সাধারণ ধারণা", "isRequired": False, "options": ["-সিলেক্ট করুন-", "সাধারণ", "প্রান্তিক", "আনুষ্ঠানিক", "ঠান্ডা", "গরম", "আকর্ষণীয়"]}
 ]
 
-# Separate Rooms System
 rooms = {}
 
 @app.route('/')
@@ -53,7 +52,6 @@ def handle_create(data):
     uid = data['uid']
     name = data['name']
     
-    # Generate 4-letter unique code
     room_code = ''.join(random.choices(string.ascii_uppercase, k=4))
     while room_code in rooms:
         room_code = ''.join(random.choices(string.ascii_uppercase, k=4))
@@ -66,7 +64,7 @@ def handle_create(data):
         'active_tiles': [],
         'deck_tiles': [],
         'discarded_tiles': [],
-        'tile_selections': {}, # Refresh-এর জন্য সেভ রাখা
+        'tile_selections': {},
         'replace_count': 2
     }
     
@@ -88,7 +86,6 @@ def handle_join(data):
         
     room = rooms[room_code]
     
-    # Check if a new player is joining an active game
     if uid not in room['players'] and room['status'] != 'waiting':
         emit('error', {'msg': 'এই রুমে অলরেডি গেম চলছে! এখন জয়েন করা যাবে না।', 'clear_storage': True}, to=request.sid)
         return
@@ -98,7 +95,6 @@ def handle_join(data):
     if uid not in room['players']:
         room['players'][uid] = {'name': name, 'sid': request.sid, 'role': None, 'means': [], 'clues': [], 'online': True}
     else:
-        # Reconnecting
         room['players'][uid]['sid'] = request.sid
         room['players'][uid]['online'] = True
         
@@ -109,9 +105,28 @@ def handle_join(data):
     emit('room_joined', {'room_code': room_code, 'uid': uid, 'is_host': is_host}, to=request.sid)
     emit('update_lobby', get_lobby_data(room_code), to=room_code)
     
-    # Recover game state if refreshing
     if room['status'] != 'waiting':
         recover_game_state(room_code, uid, request.sid)
+
+# --- রুম থেকে বের হওয়ার নতুন ইভেন্ট ---
+@socketio.on('leave_room_event')
+def handle_leave_room(data):
+    uid = data.get('uid')
+    room_code = data.get('room_code')
+    
+    if room_code in rooms and uid in rooms[room_code]['players']:
+        leave_room(room_code) # সকেট রুম থেকে বের করা
+        del rooms[room_code]['players'][uid] # প্লেয়ার লিস্ট থেকে বাদ দেওয়া
+        
+        # যদি হোস্ট বের হয়ে যায়, তবে অন্য কাউকে হোস্ট বানানো
+        if rooms[room_code]['host_uid'] == uid:
+            if len(rooms[room_code]['players']) > 0:
+                rooms[room_code]['host_uid'] = list(rooms[room_code]['players'].keys())[0]
+            else:
+                del rooms[room_code] # রুমে কেউ না থাকলে রুম ডিলিট
+                return
+                
+        emit('update_lobby', get_lobby_data(room_code), to=room_code)
 
 def recover_game_state(room_code, uid, sid):
     room = rooms[room_code]
@@ -265,16 +280,19 @@ def handle_reset(data):
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    for room_code, room in rooms.items():
+    for room_code, room in list(rooms.items()):
         for uid, p in list(room['players'].items()):
             if p.get('sid') == request.sid:
                 p['online'] = False
                 
-                # যদি লবিতে থাকা অবস্থায় লিভ নেয়, তাকে ডিলিট করে দাও
                 if room['status'] == 'waiting':
                     del room['players'][uid]
-                    if room['host_uid'] == uid and room['players']:
-                        room['host_uid'] = list(room['players'].keys())[0]
+                    if room['host_uid'] == uid:
+                        if room['players']:
+                            room['host_uid'] = list(room['players'].keys())[0]
+                        else:
+                            del rooms[room_code]
+                            return
                 
                 emit('update_lobby', get_lobby_data(room_code), to=room_code)
                 return
