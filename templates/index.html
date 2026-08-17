@@ -48,6 +48,11 @@
         
         #secretContent { display: none; margin-top: 15px; border-top: 1px solid #444; padding-top: 15px; }
         #secretPlaceholder { margin-top: 10px; color: #888; font-style: italic; }
+        
+        /* বাতিল করা টাইলস বক্সের স্টাইল */
+        #discardedBox { display: none; background: #2a1111; padding: 15px; border: 1px solid #ff4d4d; border-radius: 8px; margin-top: 15px; text-align: left; }
+        #discardedList { margin: 10px 0 0 0; padding-left: 20px; color: #ddd; font-size: 14px; line-height: 1.8; }
+
         .footer { margin-top: auto; padding: 20px; color: #666; font-size: 14px; text-align: center; border-top: 1px solid #222; }
 
         @media (max-width: 768px) {
@@ -157,6 +162,12 @@
                 <h3 style="color:var(--accent); text-align:center; margin-top:0; font-size: 18px;">বিজ্ঞানীর ক্লু</h3>
                 <p id="replaceCounter" style="color:var(--accent); text-align:center; background:#333; padding:8px; border-radius:5px; font-weight:bold; font-size: 14px;"></p>
                 <div id="tilesContainer"></div>
+                
+                <!-- বাতিল করা টাইলস দেখানোর বক্স -->
+                <div id="discardedBox">
+                    <strong style="color:#ff4d4d; font-size:16px;">❌ বাতিল করা টাইলস:</strong>
+                    <ul id="discardedList"></ul>
+                </div>
             </div>
 
             <div style="flex: 2; min-width: 280px; background:#111; padding:15px; border-radius:10px; border:1px solid #333;">
@@ -165,7 +176,6 @@
             </div>
         </div>
 
-        <!-- নতুন ম্যাচ শুরুর বাটন (শুধু হোস্ট দেখতে পাবে) -->
         <div id="hostControls" style="display:none; text-align: center; margin-top: 30px; width: 100%; border-top: 1px solid #333; padding-top: 20px;">
             <p style="color: #888; font-size: 14px; margin-bottom: 5px;">গেম শেষ হয়ে গেলে নিচের বাটনে ক্লিক করুন</p>
             <button onclick="resetGame()" style="background: #4CAF50; width: 90%; max-width: 350px;">🔄 নতুন ম্যাচ শুরু করুন (Play Again)</button>
@@ -241,18 +251,17 @@
 
         function startGame() { socket.emit('start_game'); }
 
-        // --- নতুন ম্যাচ শুরুর ফাংশন ---
         function resetGame() {
             if(confirm("আপনি কি নিশ্চিত যে বর্তমান গেমটি শেষ করে নতুন ম্যাচ শুরু করতে চান?")) {
                 socket.emit('reset_game');
             }
         }
 
-        // --- লবিতে ফিরে যাওয়ার ইভেন্ট ---
         socket.on('back_to_lobby', (data) => {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('lobbyScreen').classList.add('active');
             document.getElementById('hostControls').style.display = 'none';
+            document.getElementById('discardedBox').style.display = 'none'; // বাতিল বক্স গেম শেষে লুকানো
             
             const list = document.getElementById('lobbyPlayers');
             document.getElementById('pCount').innerText = data.players.length;
@@ -276,14 +285,11 @@
 
         socket.on('error', (data) => { alert(data.msg); });
 
-        // --- গেম শুরু হওয়ার ইভেন্ট (নতুন আপডেট) ---
         socket.on('game_started', (data) => {
             myRole = data.role;
-            // প্রথমে সব স্ক্রিন বন্ধ করে সবাইকে Hand Screen-এ পাঠাবো
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('handScreen').classList.add('active');
             
-            // সবার চরিত্র স্ক্রিনে দেখাবে
             document.getElementById('roleTitle').innerText = `আপনার চরিত্র: ${myRole}`;
             document.getElementById('murdererUI').style.display = 'none';
             document.getElementById('waitingForMurdererMsg').style.display = 'none';
@@ -291,7 +297,6 @@
             if (myRole === 'ফরেনসিক বিজ্ঞানী') {
                 document.getElementById('roleDesc').innerText = "আপনি সব জানেন কিন্তু কথা বলতে পারবেন না! খুনি অস্ত্র নির্বাচন করা পর্যন্ত অপেক্ষা করুন...";
                 document.getElementById('waitingForMurdererMsg').style.display = 'block';
-                // বিজ্ঞানীর কার্ডের জায়গা ফাঁকা থাকবে
                 document.getElementById('myMeans').innerHTML = '';
                 document.getElementById('myClues').innerHTML = '';
             } else {
@@ -365,13 +370,13 @@
                 document.getElementById('sClue').innerText = data.secret.clue;
             }
             
-            // হোস্ট হলে নতুন গেমের বাটন দেখাবে
             if (isHost) {
                 document.getElementById('hostControls').style.display = 'block';
             }
 
             renderPublicTable(data.players);
             renderTiles(data.active_tiles, data.replace_count);
+            renderDiscardedTiles(data.discarded_tiles); // বাতিল টাইলস রেন্ডার
         });
 
         function renderPublicTable(players) {
@@ -403,7 +408,7 @@
 
             const counterDiv = document.getElementById('replaceCounter');
             if(replaceCount > 0) {
-                counterDiv.innerText = `পরিবর্তনের সুযোগ: আরো ${replaceCount} বার`;
+                counterDiv.innerText = `পরিবর্তনের সুযোগ: আরও ${replaceCount} বার`;
                 counterDiv.style.color = "var(--accent)";
             } else {
                 counterDiv.innerText = "পরিবর্তনের সুযোগ শেষ! এটাই চূড়ান্ত ক্লু।";
@@ -438,6 +443,23 @@
             });
         }
 
+        // --- বাতিল টাইলস দেখানোর ফাংশন ---
+        function renderDiscardedTiles(discarded) {
+            const box = document.getElementById('discardedBox');
+            const list = document.getElementById('discardedList');
+            
+            if (discarded && discarded.length > 0) {
+                box.style.display = 'block';
+                list.innerHTML = '';
+                discarded.forEach(tileName => {
+                    list.innerHTML += `<li><strong>${tileName}</strong></li>`;
+                });
+            } else {
+                box.style.display = 'none';
+                list.innerHTML = '';
+            }
+        }
+
         function tileChanged(tileId) {
             if(myRole === 'ফরেনসিক বিজ্ঞানী') {
                 const val = document.getElementById(`sel-${tileId}`).value;
@@ -450,8 +472,10 @@
             if(sel) sel.value = data.value;
         });
 
+        // টাইলস বদলানোর সময় লিস্ট আপডেট হবে
         socket.on('tile_replaced', (data) => {
             renderTiles(data.active_tiles, data.replace_count);
+            renderDiscardedTiles(data.discarded_tiles);
         });
     </script>
 </body>
